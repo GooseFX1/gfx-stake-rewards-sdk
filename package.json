@@ -22,8 +22,7 @@
     "@solana/spl-token": "^0.3.7",
     "@solana/web3.js": "^1.41.1",
     "dotenv": "^16.0.3",
-    "goosefx-ssl-sdk": "^1.2.24",
-    "tsc": "^2.0.4"
+    "goosefx-ssl-sdk": "^1.2.24"
   },
   "devDependencies": {
     "@babel/core": "^7.17.12",
