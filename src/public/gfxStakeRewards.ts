@@ -192,7 +192,7 @@ export class GfxStakeRewards {
                 userInAta,
                 feeCollectorAta,
                 userWallet: feeSigner[0],
-                feeCollector: ADDRESSES[this.network].FEE_COLLECTOR,
+                feeCollector: ADDRESSES[this.network].SSL_SWAP_FEE_COLLECTOR,
                 tokenProgram: TOKEN_PROGRAM_ID,
             })
             .instruction()
