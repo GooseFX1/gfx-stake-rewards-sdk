@@ -8,7 +8,7 @@
     "build": "tsc -p src",
     "watch": "tsc -w -p src",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-    "prepare": "cd ../ && husky install ./ts/.husky",
+    "prepare": "husky install",
     "prepublishOnly": "tsc -p src"
   },
   "repository": {
@@ -60,12 +60,12 @@
   "author": "GooseFX",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/GooseFX1/gfx-stake-rewards/issues"
+    "url": "https://github.com/GooseFX1/gfx-stake-rewards-sdk/issues"
   },
   "files": [
     "/dist"
   ],
-  "homepage": "https://github.com/GooseFX1/gfx-stake-rewards/tree/master/ts",
+  "homepage": "https://github.com/GooseFX1/gfx-stake-rewards-sdk/tree/master/ts",
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
@@ -86,7 +86,7 @@
   "lint-staged": {
     "*.{js,ts,tsx,jsx}": [
       "eslint --fix",
-      "cd ../ && yarn test",
+      "yarn test",
       "git add"
     ]
   },
