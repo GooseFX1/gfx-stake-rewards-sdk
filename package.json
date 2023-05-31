@@ -8,13 +8,12 @@
     "build": "tsc -p src",
     "watch": "tsc -w -p src",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-    "prepare": "cd ../ && husky install ./ts/.husky",
-    "prepublishOnly": "tsc -p src",
-    "cm": "cz"
+    "prepare": "husky install",
+    "prepublishOnly": "tsc -p src"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GooseFX1/gfx-stake-rewards-sdk.git"
+    "url": "git+https://github.com/GooseFX1/gfx-stake-rewards.git"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.26.0",
@@ -87,7 +86,7 @@
   "lint-staged": {
     "*.{js,ts,tsx,jsx}": [
       "eslint --fix",
-      "cd ../ && yarn test",
+      "yarn test",
       "git add"
     ]
   },
