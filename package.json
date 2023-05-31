@@ -62,7 +62,7 @@
     "url": "https://github.com/GooseFX1/gfx-stake-rewards-sdk/issues"
   },
   "files": [
-    "/dist"
+    "dist"
   ],
   "homepage": "https://github.com/GooseFX1/gfx-stake-rewards-sdk/tree/master/ts",
   "config": {
@@ -73,7 +73,10 @@
   "release": {
     "branches": [
       "master"
-    ]
+    ],
+    "registryUrl": "https://registry.npmjs.org/",
+    "npmPublish": true,
+    "tagFormat": "${version}"
   },
   "husky": {
     "hooks": {
