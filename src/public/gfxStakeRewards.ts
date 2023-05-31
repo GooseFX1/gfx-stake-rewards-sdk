@@ -37,11 +37,10 @@ import {SSL, Swap} from 'goosefx-ssl-sdk'
 export class GfxStakeRewards {
     program: Program<GfxStakeRewardsProgramTypes>
     swap: Swap
-
+    static programId: PublicKey = new PublicKey("STKRWxT4irmTthSJydggspWmkc3ovYHx62DHLPVv1f1")
     constructor(
         public connection: Connection,
         public network: Network,
-        public programId: PublicKey,
         public wallet: Wallet
     ) {
         this.program = this.newProgram()
@@ -89,7 +88,7 @@ export class GfxStakeRewards {
     newProgram(commitment?: ConfirmOptions) {
         return new Program(
             GfxStakeRewardsProgram as GfxStakeRewardsProgramTypes,
-            this.programId.toBase58(),
+            GfxStakeRewards.programId.toBase58(),
             new AnchorProvider(
                 this.connection,
                 this.wallet,
@@ -119,7 +118,7 @@ export class GfxStakeRewards {
 
         const userMetadata = PublicKey.findProgramAddressSync(
             [TOKEN_SEEDS.userMetaData, currentWallet.toBuffer()],
-            this.programId
+            GfxStakeRewards.programId
         )
         const accounts = {
             owner: currentWallet,
@@ -143,7 +142,7 @@ export class GfxStakeRewards {
     async crank(mint: PublicKey): Promise<TransactionInstruction> {
         const usdcFeeSigner = PublicKey.findProgramAddressSync(
             [TOKEN_SEEDS.feeCollector],
-            this.programId
+            GfxStakeRewards.programId
         )
         const sslIn = SSL.findAddress(
             ADDRESSES[this.network].GFX_CONTROLLER,
@@ -154,7 +153,7 @@ export class GfxStakeRewards {
             ADDRESSES[this.network].USDC_MINT
         )
         const pair = this.swap.getPairAddress(sslIn, sslOut)
-        const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], this.programId)
+        const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], GfxStakeRewards.programId)
         const [
             liabilityVaultIn,
             swappedLiabilityVaultIn,
@@ -218,12 +217,12 @@ export class GfxStakeRewards {
             ),
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.usdcRewardSigner],
-                this.programId
+                GfxStakeRewards.programId
             )
             ,
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.userMetaData, wallet.toBuffer()],
-                this.programId
+                GfxStakeRewards.programId
             )
         ])
         return this.program.methods
@@ -253,11 +252,11 @@ export class GfxStakeRewards {
         const [gofxVaultSigner, usdcRewardSigner, ownerUsdc, userMetadata] = await Promise.all([
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.gofxVaultSigner],
-                this.programId
+                GfxStakeRewards.programId
             ),
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.usdcRewardSigner],
-                this.programId
+                GfxStakeRewards.programId
             ),
             getAssociatedTokenAddress(
                 ADDRESSES[this.network].USDC_MINT,
@@ -265,7 +264,7 @@ export class GfxStakeRewards {
             ),
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.userMetaData, wallet.toBuffer()],
-                this.programId
+                GfxStakeRewards.programId
             )
         ])
         return this.program.methods
@@ -315,7 +314,7 @@ export class GfxStakeRewards {
         const [gofxSigner, ownerGofx, userMetadata] = await Promise.all([
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.gofxUnstakedSigner],
-                this.programId
+                GfxStakeRewards.programId
             ),
             getAssociatedTokenAddress(
                 ADDRESSES[this.network].GOFX_MINT,
@@ -323,7 +322,7 @@ export class GfxStakeRewards {
             ),
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.userMetaData, wallet.toBuffer()],
-                this.programId
+                GfxStakeRewards.programId
             )
         ])
 
@@ -350,10 +349,10 @@ export class GfxStakeRewards {
         const [usdcSigner, ownerUsdc, userMetadata] = await Promise.all([
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.usdcRewardSigner],
-                this.programId
+                GfxStakeRewards.programId
             ),
             getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, wallet),
-            PublicKey.findProgramAddressSync([TOKEN_SEEDS.userMetaData, wallet.toBuffer()], this.programId)
+            PublicKey.findProgramAddressSync([TOKEN_SEEDS.userMetaData, wallet.toBuffer()], GfxStakeRewards.programId)
         ])
         return await this.program.methods
             .claimFees()
@@ -380,7 +379,7 @@ export class GfxStakeRewards {
         const wallet = walletPublicKey ?? this.wallet.publicKey
         const userMetadata = PublicKey.findProgramAddressSync(
             [TOKEN_SEEDS.userMetaData, wallet.toBuffer()],
-            this.programId
+            GfxStakeRewards.programId
         )
 
         return await this.program.methods
@@ -399,7 +398,7 @@ export class GfxStakeRewards {
      * @returns global stake pool
      */
     async getStakePool(): Promise<StakePool> {
-        const stakePoolAddress = PublicKey.findProgramAddressSync([TOKEN_SEEDS.stakePool], this.programId)
+        const stakePoolAddress = PublicKey.findProgramAddressSync([TOKEN_SEEDS.stakePool], GfxStakeRewards.programId)
         const result = await this.program.account.stakePool.fetch(stakePoolAddress[0], 'confirmed')
         return result as any;
     }
@@ -410,7 +409,7 @@ export class GfxStakeRewards {
      */
     async getUSDCRewardVault(): Promise<USDCRewardVault> {
 
-        const usdcRewardVaultSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.usdcRewardSigner], this.programId)
+        const usdcRewardVaultSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.usdcRewardSigner], GfxStakeRewards.programId)
         const usdcAddress = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, usdcRewardVaultSigner[0], true)
         return await getAccount(this.connection, usdcAddress, "processed")
     }
@@ -422,7 +421,7 @@ export class GfxStakeRewards {
      */
     async getFeesCollected(mint?: PublicKey): Promise<FeesCollected> {
 
-        const mintSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], this.programId)
+        const mintSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], GfxStakeRewards.programId)
         const mintAddress = await getAssociatedTokenAddress(mint ?? ADDRESSES[this.network].USDC_MINT, mintSigner[0], true)
         return await getAccount(this.connection, mintAddress, "processed")
     }
@@ -433,7 +432,7 @@ export class GfxStakeRewards {
      */
     async getGoFxVault(): Promise<GOFXVault> {
 
-        const mintSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.gofxVaultSigner], this.programId)
+        const mintSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.gofxVaultSigner], GfxStakeRewards.programId)
         const mintAddress = await getAssociatedTokenAddress(ADDRESSES[this.network].GOFX_MINT, mintSigner[0], true)
         return await getAccount(this.connection, mintAddress, "confirmed")
     }
@@ -443,7 +442,7 @@ export class GfxStakeRewards {
      * @returns GoFX unstake vault
      */
     async getGoFxUnstakedVault(): Promise<GOFXUnstaked> {
-        const mintSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.gofxUnstakedSigner], this.programId)
+        const mintSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.gofxUnstakedSigner], GfxStakeRewards.programId)
         const mintAddress = await getAssociatedTokenAddress(ADDRESSES[this.network].GOFX_MINT, mintSigner[0], true)
         return await getAccount(this.connection, mintAddress, "confirmed")
     }
@@ -455,7 +454,7 @@ export class GfxStakeRewards {
      */
     async getUserMetaData(walletPublicKey?: PublicKey): Promise<UserMetadata> {
         const wallet = walletPublicKey ?? this.wallet.publicKey
-        const userMetaDataAddress = PublicKey.findProgramAddressSync([TOKEN_SEEDS.userMetaData, wallet.toBuffer()], this.programId)
+        const userMetaDataAddress = PublicKey.findProgramAddressSync([TOKEN_SEEDS.userMetaData, wallet.toBuffer()], GfxStakeRewards.programId)
         return await this.program.account.userMetadata.fetch(userMetaDataAddress[0], 'processed') as any
     }
 
