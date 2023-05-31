@@ -25,6 +25,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "lts/*"
+      - name: Install TypeScript
+        run: npm install typescript
       - name: Install dependencies
         run: npm clean-install
       - name: Build
