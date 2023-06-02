@@ -1,6 +1,6 @@
 {
   "name": "goosefx-stake-rewards-sdk",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "A SDK for interfacing with the GooseFX stake rewards program",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
