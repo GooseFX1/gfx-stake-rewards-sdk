@@ -38,19 +38,19 @@ export const ADDRESSES = {
     },
     DEVNET: {
         GOFX_MINT: new PublicKey(
-            'GFX1ZjR2P15tmrSwow6FjyDYcEkoFb4p4gJCpLBjaxHD'
+            'GFXMaFQyhNSfjLcjyT1p1iHyJUT8kWbGkH3WXudynuYU'
         ),
         USDC_MINT: new PublicKey(
-            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+            'USDC4bFm2MkhE24BJy8VTT3r2Pr14V6E7fX6fm4w2q9'
         ),
         CONTROLLER_PROGRAM_ID: new PublicKey(
-            '8KJx48PYGHVC9fxzRRtYp4x4CM2HyYCm2EjVuAP4vvrx'
+            '3Gwyhoudx8XgYry8dzKQ2GGsofkUdm7VZUvddHxchL3x'
         ),
         GFX_CONTROLLER: new PublicKey(
-            '8CxKnuJeoeQXFwiG6XiGY2akBjvJA5k3bE52BfnuEmNQ'
+            'ApkmzBaTPUAeVj3QuqDcz6iLE6xZSLd29nke4McqrKw5'
         ),
         SSL_PROGRAM_ID: new PublicKey(
-            '7WduLbRfYhTJktjLw5FDEyrqoEv61aTTCuGAetgLjzN5'
+            'JYe7AcuQ7CqhkGvchJGvSKF8ei41FuDKb1h47qkbFNf'
         ),
         STAKE_POOL: new PublicKey(
             'Eu8eZF1dfR1hXUwHbngEsDBf3kMhLuRSSaYcr67USBbj'
