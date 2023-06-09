@@ -65,7 +65,7 @@ export const ADDRESSES = {
             '28BSkwKCGDMfUcKLZzLUgKtZzRKAFei1wYJ5deHxLjku'
         ),
         SSL_SWAP_FEE_COLLECTOR: new PublicKey(
-            "GFXSwpZBSU9LF1gHRpRv2u967ACKKncFnfy3VKyQqwhp"
+            "11111111111111111111111111111111"
         )
     },
 }
