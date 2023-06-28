@@ -24,13 +24,13 @@ export const ADDRESSES = {
             'Eu8eZF1dfR1hXUwHbngEsDBf3kMhLuRSSaYcr67USBbj'
         ),
         USDC_REWARD_VAULT: new PublicKey(
-            '8G6dPFQcdrqGwyb7sJSCthNQr1b6WsN5j7cJzFMfE3iG'
+            '7QUUirYGtKRnNjTXqjofX3oDsRnAwNw5ngSz9e8EQdec'
         ),
         GOFX_VAULT: new PublicKey(
-            '37QhJWmUX4gNDiYsadxjqkoWZRUeb3ahVaUtrFawtTXy'
+            'D9DhGq6MctzCzABhFybyuj3KHj3QbeG5H3JzXMGysY3T'
         ),
         GOFX_UNSTAKED_VAULT: new PublicKey(
-            '28BSkwKCGDMfUcKLZzLUgKtZzRKAFei1wYJ5deHxLjku'
+            '5GZjjTaiB6FW8kgBwh8egSBuRk7HEBkzdUGrHmf3QzJt'
         ),
         SSL_SWAP_FEE_COLLECTOR: new PublicKey(
             "GFXSwpZBSU9LF1gHRpRv2u967ACKKncFnfy3VKyQqwhp"
