@@ -204,7 +204,7 @@ export class GfxStakeRewards {
      * @param walletPublicKey optional wallet pubkey to act upon
      * @returns Promise<TransactionInstruction>
      */
-    async stake(amount: number, walletPublicKey?: PublicKey,): Promise<TransactionInstruction> {
+    async stake(amount: anchor.BN, walletPublicKey?: PublicKey,): Promise<TransactionInstruction> {
         const wallet = walletPublicKey ?? this.wallet.publicKey
         const [ownerUsdc, ownerGofx, usdcRewardSigner, userMetadata] = await Promise.all([
             getAssociatedTokenAddress(
@@ -226,7 +226,7 @@ export class GfxStakeRewards {
             )
         ])
         return this.program.methods
-            .stake(new anchor.BN(amount))
+            .stake(amount)
             .accounts({
                 owner: wallet,
                 stakePool: ADDRESSES[this.network].STAKE_POOL,
@@ -247,7 +247,7 @@ export class GfxStakeRewards {
      * @param walletPublicKey optional wallet pubkey to act upon
      * @returns Promise<TransactionInstruction>
      */
-    async unstake(amount: number, walletPublicKey?: PublicKey): Promise<TransactionInstruction> {
+    async unstake(amount: anchor.BN, walletPublicKey?: PublicKey): Promise<TransactionInstruction> {
         const wallet = walletPublicKey ?? this.wallet.publicKey
         const [gofxVaultSigner, usdcRewardSigner, ownerUsdc, userMetadata] = await Promise.all([
             PublicKey.findProgramAddressSync(
@@ -268,7 +268,7 @@ export class GfxStakeRewards {
             )
         ])
         return this.program.methods
-            .unstake(new anchor.BN(amount))
+            .unstake(amount)
             .accounts({
                 owner: wallet,
                 stakePool: ADDRESSES[this.network].STAKE_POOL,
