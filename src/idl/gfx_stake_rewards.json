@@ -611,6 +611,10 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
             "name": "accountOpenedAt",
             "type": "i64"
           },

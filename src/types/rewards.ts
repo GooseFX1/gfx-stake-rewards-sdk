@@ -1,4 +1,5 @@
 import {BN} from "@project-serum/anchor";
+import {PublicKey} from "@solana/web3.js";
 export interface UnstakeableTicket {
     index: number
     ticket:UnstakeTicket
@@ -8,6 +9,7 @@ export interface UnstakeTicket {
     createdAt: BN
 }
 export interface UserMetadata {
+    owner: PublicKey
     accountOpenedAt: BN
     totalStaked: BN
     lastObservedTap: BN
