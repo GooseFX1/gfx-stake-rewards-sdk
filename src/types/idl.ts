@@ -387,22 +387,7 @@ export type GfxStakeRewardsProgramTypes = {
                     isSigner: true
                 },
                 {
-                    name: 'stakePool'
-                    isMut: true
-                    isSigner: false
-                },
-                {
-                    name: 'gofxVault'
-                    isMut: false
-                    isSigner: false
-                },
-                {
-                    name: 'usdcRewardVault'
-                    isMut: true
-                    isSigner: false
-                },
-                {
-                    name: 'ownerUsdc'
+                    name: 'userUsdcAccount'
                     isMut: true
                     isSigner: false
                 },
@@ -418,6 +403,26 @@ export type GfxStakeRewardsProgramTypes = {
                 },
                 {
                     name: 'tokenProgram'
+                    isMut: false
+                    isSigner: false
+                },
+                {
+                    name: 'associatedTokenProgram'
+                    isMut: false
+                    isSigner: false
+                },
+                {
+                    name:"usdcMint",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "userRewardsHoldingAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    name: 'systemProgram'
                     isMut: false
                     isSigner: false
                 }
@@ -446,6 +451,16 @@ export type GfxStakeRewardsProgramTypes = {
                     name: 'systemProgram'
                     isMut: false
                     isSigner: false
+                },
+                {
+                    name: 'tokenProgram'
+                    isMut: false
+                    isSigner: false
+                },
+                {
+                    "name": "userRewardsHoldingAccount",
+                    "isMut": true,
+                    "isSigner": false
                 }
             ]
             args: []
