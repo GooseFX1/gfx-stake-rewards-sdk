@@ -90,29 +90,68 @@
     },
     {
       "name": "initializeUserAccount",
+      "docs": [
+        "Initialize user accounts"
+      ],
       "accounts": [
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "This address will be the owner of the user metadata account being initialized."
+          ]
         },
         {
           "name": "funder",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "This field allows a separate funder for the rent-exempt balance",
+            "of the accounts being initialized here."
+          ]
         },
         {
           "name": "stakePool",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Global state"
+          ]
+        },
+        {
+          "name": "usdcMint",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "userMetadata",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "User metadata account being initialized"
+          ]
+        },
+        {
+          "name": "userRewardsHoldingAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "User's reward are escrowed at TokenAccount of their UserMetadata"
+          ]
         },
         {
           "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -380,30 +419,38 @@
     },
     {
       "name": "claimFees",
+      "docs": [
+        "Claim a share of the collected fees."
+      ],
       "accounts": [
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Owner of the user metadata account"
+          ]
         },
         {
-          "name": "stakePool",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "gofxVault",
+          "name": "usdcMint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "USDC Mint, required for the TokenAccount PDA"
+          ]
         },
         {
-          "name": "usdcRewardVault",
+          "name": "userRewardsHoldingAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "A user's unique PDA that points to the TokenAccount escrowing",
+            "their balance"
+          ]
         },
         {
-          "name": "ownerUsdc",
-          "isMut": true,
+          "name": "userUsdcAccount",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -414,7 +461,10 @@
         {
           "name": "userMetadata",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Stores user staking information"
+          ]
         },
         {
           "name": "tokenProgram",
@@ -426,20 +476,47 @@
     },
     {
       "name": "closeUserAccount",
+      "docs": [
+        "Close a user metadata PDA and return the rent lamports",
+        "once they close out of all interaction with this program."
+      ],
       "accounts": [
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signer, user metadata account owner"
+          ]
         },
         {
           "name": "rentRecipient",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Recipient of the lamports that supplied the rent-exempt balance",
+            "of the user metadata account being closed."
+          ]
         },
         {
           "name": "userMetadata",
           "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Close this account"
+          ]
+        },
+        {
+          "name": "userRewardsHoldingAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "User's reward are escrowed at TokenAccount of their UserMetadata"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
           "isSigner": false
         },
         {

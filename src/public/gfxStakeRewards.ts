@@ -18,7 +18,7 @@ import {
     AnchorProvider,
     Wallet,
 } from '@project-serum/anchor'
-import {getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
+import {ASSOCIATED_TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
 import * as GfxStakeRewardsProgram from '../idl/gfx_stake_rewards.json'
 import {Buffer} from 'buffer'
 import {
@@ -120,11 +120,16 @@ export class GfxStakeRewards {
             [TOKEN_SEEDS.userMetaData, currentWallet.toBuffer()],
             GfxStakeRewards.programId
         )
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0])
+
         const accounts = {
             owner: currentWallet,
             funder: secondaryFunder ?? currentWallet,
             stakePool: ADDRESSES[this.network].STAKE_POOL,
+            usdcMint: ADDRESSES[this.network].USDC_MINT,
             userMetadata: userMetadata[0],
+            userRewardsHoldingAccount: userRewardsHoldingAccount,
+
             systemProgram: SystemProgram.programId,
         }
 
@@ -346,7 +351,7 @@ export class GfxStakeRewards {
      */
     async claimFees(walletPublicKey?: PublicKey): Promise<TransactionInstruction> {
         const wallet = walletPublicKey ?? this.wallet.publicKey
-        const [usdcSigner, ownerUsdc, userMetadata] = await Promise.all([
+        const [usdcSigner, ownerUsdc,  userMetadata] = await Promise.all([
             PublicKey.findProgramAddressSync(
                 [TOKEN_SEEDS.usdcRewardSigner],
                 GfxStakeRewards.programId
@@ -354,17 +359,19 @@ export class GfxStakeRewards {
             getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, wallet),
             PublicKey.findProgramAddressSync([TOKEN_SEEDS.userMetaData, wallet.toBuffer()], GfxStakeRewards.programId)
         ])
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0])
         return await this.program.methods
             .claimFees()
             .accounts({
                 owner: wallet,
-                userMetadata: userMetadata[0],
-                ownerUsdc: ownerUsdc,
-                usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+                usdcMint: ADDRESSES[this.network].USDC_MINT,
+                userRewardsHoldingAccount: userRewardsHoldingAccount,
+                userUsdcAccount: ownerUsdc,
                 usdcRewardSigner: usdcSigner[0],
-                gofxVault: ADDRESSES[this.network].GOFX_VAULT,
-                stakePool: ADDRESSES[this.network].STAKE_POOL,
+                userMetadata: userMetadata[0],
+                systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
+                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID
             })
             .instruction()
     }
@@ -381,6 +388,7 @@ export class GfxStakeRewards {
             [TOKEN_SEEDS.userMetaData, wallet.toBuffer()],
             GfxStakeRewards.programId
         )
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0])
 
         return await this.program.methods
             .closeUserAccount()
@@ -388,6 +396,8 @@ export class GfxStakeRewards {
                 owner: wallet,
                 rentRecipient: rentRecipient ?? wallet,
                 userMetadata: userMetadata[0],
+                userRewardsHoldingAccount: userRewardsHoldingAccount,
+                tokenProgram: TOKEN_PROGRAM_ID,
                 systemProgram: SystemProgram.programId,
             })
             .instruction()
