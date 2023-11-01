@@ -518,4 +518,19 @@ export class GfxStakeRewards {
     getTotalUnstakeClaimable(unstakeableTickets: UnstakeableTicket[]): number {
         return unstakeableTickets.reduce((a, b) => a + b.ticket.totalUnstaked.toNumber(), 0.0)
     }
+    async getUserRewardsHoldingAccount(walletPublicKey?:PublicKey): Promise<PublicKey> {
+        const wallet = walletPublicKey ?? this.wallet.publicKey
+        const [userMetadata] = await Promise.all([
+            PublicKey.findProgramAddressSync([TOKEN_SEEDS.userMetaData, wallet.toBuffer()], GfxStakeRewards.programId)
+        ])
+       return await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0])
+    }
+    async getUserRewardsHoldingAmount(walletPublicKey?:PublicKey): Promise<string> {
+        const wallet = walletPublicKey ?? this.wallet.publicKey
+        const userRewardsHoldingAccount = await this.getUserRewardsHoldingAccount(wallet)
+        const accountInfo = await this.connection.getParsedAccountInfo(userRewardsHoldingAccount,'confirmed')
+        if(!accountInfo || !accountInfo.value)return "0.0"
+        
+        return (accountInfo.value.data as any).parsed.info.tokenAmount.uiAmountString ?? "0.0"
+    }
 }
