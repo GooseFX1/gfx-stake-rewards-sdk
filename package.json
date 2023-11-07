@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "yarn run build:common && yarn run build:types",
-    "build:common": "rm -rf dist && node esbuild.js",
+    "build:common": "node esbuild.js",
     "build:types": "tsc --emitDeclarationOnly --declaration --project tsconfig.json",
     "watch": "tsc -w -p src",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",

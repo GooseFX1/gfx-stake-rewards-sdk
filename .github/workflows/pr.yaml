@@ -1,0 +1,28 @@
+name: NPM Semantic Release
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+  build:
+    name: Merge Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+      - name: Install TypeScript
+        run: npm install typescript
+      - name: Install dependencies
+        run: npm clean-install
+      - name: Build
+        run: npm run build
