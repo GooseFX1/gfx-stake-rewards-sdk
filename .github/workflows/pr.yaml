@@ -26,3 +26,4 @@ jobs:
         run: npm clean-install
       - name: Build
         run: npm run build
+        
