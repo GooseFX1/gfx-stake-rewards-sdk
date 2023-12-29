@@ -29,12 +29,12 @@ import {
     UnstakeTicket,
     USDCRewardVault,
     UserMetadata,
-    IDL as GfxStakeRewardsIDL
+    IDL as GfxStakeRewardsIDL, GfxStakeRewardsProgramTypes
 } from '../types'
 import {SSL, Swap} from 'goosefx-ssl-sdk'
 
 export class GfxStakeRewards {
-    program: Program<GfxStakeRewardsIDL>
+    program: Program<GfxStakeRewardsProgramTypes>
     swap: Swap
     static programId: PublicKey = new PublicKey("STKRWxT4irmTthSJydggspWmkc3ovYHx62DHLPVv1f1")
     constructor(
