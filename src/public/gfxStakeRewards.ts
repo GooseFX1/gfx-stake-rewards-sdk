@@ -18,8 +18,7 @@ import {
     AnchorProvider,
     Wallet,
 } from '@project-serum/anchor'
-import {ASSOCIATED_TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
-import * as GfxStakeRewardsProgram from '../idl/gfx_stake_rewards.json'
+import { getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
 import {Buffer} from 'buffer'
 import {
     FeesCollected,
@@ -30,12 +29,12 @@ import {
     UnstakeTicket,
     USDCRewardVault,
     UserMetadata,
-    GfxStakeRewardsProgramTypes
+    IDL as GfxStakeRewardsIDL
 } from '../types'
 import {SSL, Swap} from 'goosefx-ssl-sdk'
 
 export class GfxStakeRewards {
-    program: Program<GfxStakeRewardsProgramTypes>
+    program: Program<GfxStakeRewardsIDL>
     swap: Swap
     static programId: PublicKey = new PublicKey("STKRWxT4irmTthSJydggspWmkc3ovYHx62DHLPVv1f1")
     constructor(
@@ -87,7 +86,7 @@ export class GfxStakeRewards {
      */
     newProgram(commitment?: ConfirmOptions) {
         return new Program(
-          GfxStakeRewardsProgram as GfxStakeRewardsProgramTypes,
+        GfxStakeRewardsIDL,
           GfxStakeRewards.programId.toBase58(),
           new AnchorProvider(
             this.connection,
@@ -210,22 +209,24 @@ export class GfxStakeRewards {
      */
     async stake(amount: anchor.BN, walletPublicKey?: PublicKey,): Promise<TransactionInstruction> {
         const wallet = walletPublicKey ?? this.wallet.publicKey
-        const [ ownerGofx, usdcRewardSigner, userMetadata] = await Promise.all([
-            getAssociatedTokenAddress(
-              ADDRESSES[this.network].GOFX_MINT,
-              wallet
-            ),
+        const [  usdcRewardSigner, userMetadata] = await Promise.all([
             PublicKey.findProgramAddressSync(
               [TOKEN_SEEDS.usdcRewardSigner],
               GfxStakeRewards.programId
-            )
-            ,
+            ),
             PublicKey.findProgramAddressSync(
               [TOKEN_SEEDS.userMetaData, wallet.toBuffer()],
               GfxStakeRewards.programId
             )
         ])
-        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0],true)
+        const [ownerGofx,userRewardsHoldingAccount]= await Promise.all([
+            getAssociatedTokenAddress(
+                ADDRESSES[this.network].GOFX_MINT,
+                wallet
+            ),
+            getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0],true)
+        ])
+
         return this.program.methods
           .stake(amount)
           .accounts({

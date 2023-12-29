@@ -1,6 +1,9 @@
 {
   "version": "0.1.0",
   "name": "gfx_stake_rewards",
+  "docs": [
+    "See this module for instruction documentation."
+  ],
   "instructions": [
     {
       "name": "initializeGlobalAccounts",
@@ -883,11 +886,18 @@
   "accounts": [
     {
       "name": "StakePool",
+      "docs": [
+        "A global account that stores global staking information."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "totalAccumulatedProfit",
+            "docs": [
+              "A monotonically increasing value, that increments each time",
+              "USDC is added to the [UsdcRewardVault]'s associated USDC account."
+            ],
             "type": "u64"
           },
           {
@@ -899,6 +909,11 @@
     },
     {
       "name": "UserMetadata",
+      "docs": [
+        "Contains information about a user's staking activity,",
+        "including how much they have staked, the last seen total accumulated profit,",
+        "and an array of unstaking operations which have yet to be resolved by the user."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -908,26 +923,50 @@
           },
           {
             "name": "accountOpenedAt",
+            "docs": [
+              "Timestamp of when the user metadata account was opened."
+            ],
             "type": "i64"
           },
           {
             "name": "totalStaked",
+            "docs": [
+              "The total amount of GOFX staked by a given user."
+            ],
             "type": "u64"
           },
           {
             "name": "lastObservedTap",
+            "docs": [
+              "The total accumulated profit at the time of a user's previous",
+              "execution of claim fee logic.",
+              "This value is also updated when a user's stake account changes",
+              "from zero to some non-zero value,"
+            ],
             "type": "u64"
           },
           {
             "name": "lastClaimed",
+            "docs": [
+              "Timestamp of the last time the user executed the `claim_fees` instruction."
+            ],
             "type": "i64"
           },
           {
             "name": "totalEarned",
+            "docs": [
+              "The total amount of GOFX earn over the history of the user's staking account."
+            ],
             "type": "u64"
           },
           {
             "name": "unstakingTickets",
+            "docs": [
+              "Any unstaking operations will result in unstaking tickets located",
+              "on this array.",
+              "When it comes to resolving these unstaking tickets,",
+              "it is up to the instruction caller to know which indices to pass."
+            ],
             "type": {
               "array": [
                 {
@@ -941,22 +980,6 @@
       }
     },
     {
-      "name": "UnstakingTicket",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "totalUnstaked",
-            "type": "u64"
-          },
-          {
-            "name": "createdAt",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
       "name": "UsdcRewardVault",
       "type": {
         "kind": "struct",
@@ -965,6 +988,11 @@
     },
     {
       "name": "FeesCollected",
+      "docs": [
+        "Does not need to be initialized, only to act as a signer.",
+        "Token accounts owned by this account are collected as inbound",
+        "fees to be swapped to USDC on a regular crank."
+      ],
       "type": {
         "kind": "struct",
         "fields": []
@@ -972,15 +1000,37 @@
     },
     {
       "name": "TokenDistributor",
+      "docs": [
+        "An account that acts as an authority over various token accounts,",
+        "and facilitates proportional transfer of those token balances",
+        "to multiple destinations. This allows tokens to be programmatically",
+        "distributed from one account to many others.",
+        "",
+        "The intention is to use token accounts owned by a [TokenDistributor] to",
+        "retain some fraction of fee revenue for staking rewards, and move the rest",
+        "of the fee revenue to treasury accounts.",
+        "",
+        "This account is the token owner of various token accounts, and signs for",
+        "their transfers during distribution. The destination accounts are configured",
+        "in a [TokenDistributionConfig]."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "authority",
+            "docs": [
+              "Only this authority can initialize and configure [TokenDistributionConfig]",
+              "accounts that are controlled by this [TokenDistributor]."
+            ],
             "type": "publicKey"
           },
           {
             "name": "bump",
+            "docs": [
+              "Recording the bump on this account so that we do not need to recalculate it",
+              "`N` times for `N` signed transfer instructions during token distribution cranks."
+            ],
             "type": "u8"
           }
         ]
@@ -988,23 +1038,48 @@
     },
     {
       "name": "TokenDistributionConfig",
+      "docs": [
+        "A configuration for a given mint that lists multiple accounts",
+        "where the fees should be transferred, and in what proportion.",
+        "",
+        "In other words, if a [TokenDistributor] intends to distribute MSOL",
+        "to multiple locations, a [TokenDistributionConfig] should be created for MSOL,",
+        "listing those locations and the fractions of the token balance to be distributed.",
+        "",
+        "For each mint for which tokens are being distributed,",
+        "a [TokenDistributor] should have initialized one of these."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "authority",
+            "docs": [
+              "Only this authority can initialize or configure a [TokenDestinationConfig]."
+            ],
             "type": "publicKey"
           },
           {
             "name": "mint",
+            "docs": [
+              "The mint of the token accounts that will be transferred."
+            ],
             "type": "publicKey"
           },
           {
             "name": "len",
+            "docs": [
+              "The number of non-default elements in the configuration array.",
+              "These elements must be contiguous. This constraint is enforced in [sanitize_token_dest_config]."
+            ],
             "type": "u32"
           },
           {
             "name": "destinations",
+            "docs": [
+              "A list of destination accounts paired with fractional destinations",
+              "for each of them. The sum of all fractions here must add up to exactly ten thousand."
+            ],
             "type": {
               "array": [
                 {
@@ -1019,6 +1094,10 @@
     },
     {
       "name": "GofxVault",
+      "docs": [
+        "Does not need to be initialized, only to act as a signer.",
+        "This signer owns the GOFX token account where staked GOFX is stored."
+      ],
       "type": {
         "kind": "struct",
         "fields": []
@@ -1026,6 +1105,11 @@
     },
     {
       "name": "GofxUnstaked",
+      "docs": [
+        "Does not need to be initialized, only to act as a signer.",
+        "This signer owns the GOFX token account where unstaked GOFX is stored",
+        "before eventually being claimed with an unstaking ticket."
+      ],
       "type": {
         "kind": "struct",
         "fields": []
@@ -1034,33 +1118,58 @@
   ],
   "types": [
     {
-      "name": "TokenDestination",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "tokenAct",
-            "type": "publicKey"
-          },
-          {
-            "name": "fraction",
-            "type": "u32"
-          }
-        ]
-      }
-    },
-    {
       "name": "UnstakingTicket",
+      "docs": [
+        "Represents some unstaked GOFX that can be redeemed 7 days after",
+        "the creation of this account."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "totalUnstaked",
+            "docs": [
+              "The total amount of unstaked GOFX, which will be redeemable after",
+              "the 7-day cooldown."
+            ],
             "type": "u64"
           },
           {
             "name": "createdAt",
+            "docs": [
+              "The clock timestamp of when this account was created.",
+              "The GOFX unstaked is redeemable >=7 days after this timestamp."
+            ],
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenDestination",
+      "docs": [
+        "A destination account and fraction (in BPS) of token balance",
+        "that should be transferred to that destination.",
+        "",
+        "A [TokenDistributionConfig] is stores set of these [TokenDestination]s",
+        "for a given mint."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tokenAct",
+            "docs": [
+              "The destination token account."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "fraction",
+            "docs": [
+              "Basis-points (100ths of a percent)"
+            ],
+            "type": "u32"
           }
         ]
       }
@@ -1095,7 +1204,7 @@
     {
       "code": 6005,
       "name": "InvalidTokenDistributionConfig",
-      "msg": "Token distribution config elements must be non-empty \\\n    and contain non-zero fractions that sum to 10_000"
+      "msg": "Token distribution config elements must be non-empty and contain non-zero fractions that sum to 10_000"
     },
     {
       "code": 6006,
@@ -1116,6 +1225,11 @@
       "code": 6009,
       "name": "InsufficientTokenDistributionBalance",
       "msg": "Source token balance must be >=10_000 to crank token distribution"
+    },
+    {
+      "code": 6010,
+      "name": "CannotCloseUserAccountRewards",
+      "msg": "Cannot close a user account until all rewards are claimed"
     }
   ]
 }

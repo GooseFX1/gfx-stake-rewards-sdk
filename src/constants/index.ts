@@ -3,7 +3,11 @@ import * as anchor from '@project-serum/anchor'
 import {Buffer} from 'buffer'
 
 export type Network = 'MAINNET' | 'DEVNET'
-export const ADDRESSES = {
+interface AddressType {
+    MAINNET: Record<string,PublicKey>,
+    DEVNET:Record<string,PublicKey>
+}
+export const ADDRESSES:AddressType = {
     MAINNET: {
         GOFX_MINT: new PublicKey(
             'GFX1ZjR2P15tmrSwow6FjyDYcEkoFb4p4gJCpLBjaxHD'
