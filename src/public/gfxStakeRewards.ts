@@ -19,7 +19,6 @@ import {
     Wallet,
 } from '@project-serum/anchor'
 import { getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
-import * as GfxStakeRewardsProgram from '../idl/gfx_stake_rewards.json'
 import {Buffer} from 'buffer'
 import {
     FeesCollected,
