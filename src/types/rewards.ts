@@ -1,26 +1,27 @@
-import {BN} from "@project-serum/anchor";
+import {BN} from "@coral-xyz/anchor";
+import * as anchor from "@coral-xyz/anchor"
 import {PublicKey} from "@solana/web3.js";
 export interface UnstakeableTicket {
     index: number
     ticket:UnstakeTicket
 }
 export interface UnstakeTicket {
-    totalUnstaked: BN
-    createdAt: BN
+    totalUnstaked: anchor.BN
+    createdAt: anchor.BN
 }
 export interface UserMetadata {
     owner: PublicKey
-    accountOpenedAt: BN
-    totalStaked: BN
-    lastObservedTap: BN
-    lastClaimed: BN
-    totalEarned: BN
+    accountOpenedAt: anchor.BN
+    totalStaked: anchor.BN
+    lastObservedTap: anchor.BN
+    lastClaimed: anchor.BN
+    totalEarned: anchor.BN
     unstakingTickets: UnstakeTicket[]
 }
 
 export interface StakePool {
-    totalAccumulatedProfit: BN
-    protocolActivatedAt: BN
+    totalAccumulatedProfit: anchor.BN
+    protocolActivatedAt: anchor.BN
 }
 export interface USDCRewardVault {}
 export interface FeesCollected {}

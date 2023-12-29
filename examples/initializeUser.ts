@@ -1,6 +1,6 @@
 import {rewards,wallet,connection} from "./index";
 import {Keypair, sendAndConfirmTransaction, Transaction} from "@solana/web3.js";
-import {Wallet} from "@project-serum/anchor";
+import {Wallet} from "@coral-xyz/anchor";
 const secondaryWallet = new Wallet(Keypair.generate())
 
 const exampleInitializeForMainWallet = async ()=>{

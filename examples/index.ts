@@ -1,6 +1,6 @@
 import {GfxStakeRewards} from "../src";
 import {Connection, Keypair, PublicKey} from "@solana/web3.js";
-import { Wallet } from "@project-serum/anchor";
+import { Wallet } from "@coral-xyz/anchor";
 
 // initialize the SDK
 const programId = new PublicKey("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS")
