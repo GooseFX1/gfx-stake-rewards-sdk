@@ -18,8 +18,7 @@ import {
     AnchorProvider,
     Wallet,
 } from '@project-serum/anchor'
-import {ASSOCIATED_TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
-import * as GfxStakeRewardsProgram from '../idl/gfx_stake_rewards.json'
+import { getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
 import {Buffer} from 'buffer'
 import {
     FeesCollected,
@@ -30,7 +29,7 @@ import {
     UnstakeTicket,
     USDCRewardVault,
     UserMetadata,
-    GfxStakeRewardsProgramTypes
+    GfxStakeRewardsProgramTypes, IDL
 } from '../types'
 import {SSL, Swap} from 'goosefx-ssl-sdk'
 
@@ -87,7 +86,7 @@ export class GfxStakeRewards {
      */
     newProgram(commitment?: ConfirmOptions) {
         return new Program(
-          GfxStakeRewardsProgram as GfxStakeRewardsProgramTypes,
+          IDL,
           GfxStakeRewards.programId.toBase58(),
           new AnchorProvider(
             this.connection,
