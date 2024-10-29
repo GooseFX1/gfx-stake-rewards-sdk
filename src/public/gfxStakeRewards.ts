@@ -18,7 +18,9 @@ import {
     AnchorProvider,
     Wallet,
 } from '@project-serum/anchor'
-import { getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID} from '@solana/spl-token'
+import {getAccount, getAssociatedTokenAddress, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID} from '@solana/spl-token'
+import * as GfxStakeRewardsProgram from '../idl/gfx_stake_rewards.json'
+import { IDL } from '../types'
 import {Buffer} from 'buffer'
 import {
     FeesCollected,
@@ -32,6 +34,18 @@ import {
     GfxStakeRewardsProgramTypes, IDL
 } from '../types'
 import {SSL, Swap} from 'goosefx-ssl-sdk'
+
+export interface SwapRouteParams {
+  minOut?: anchor.BN,
+  ammProgram: PublicKey,
+  state: PublicKey,
+  config: PublicKey,
+  authority: PublicKey,
+  inputVault: PublicKey,
+  outputVault: PublicKey,
+  inputTokenProgram: PublicKey,
+  observationState: PublicKey,
+};
 
 export class GfxStakeRewards {
     program: Program<GfxStakeRewardsProgramTypes>
@@ -86,13 +100,13 @@ export class GfxStakeRewards {
      */
     newProgram(commitment?: ConfirmOptions) {
         return new Program(
-          IDL,
-          GfxStakeRewards.programId.toBase58(),
-          new AnchorProvider(
-            this.connection,
-            this.wallet,
-            commitment ?? {commitment: 'confirmed'}
-          )
+            IDL,
+            this.programId.toBase58(),
+            new AnchorProvider(
+                this.connection,
+                this.wallet,
+                commitment ?? {commitment: 'confirmed'}
+            )
         )
     }
     
@@ -119,7 +133,7 @@ export class GfxStakeRewards {
           [TOKEN_SEEDS.userMetaData, currentWallet.toBuffer()],
           GfxStakeRewards.programId
         )
-        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0],true)
+        const usdcMint = ADDRESSES[this.network].USDC_MINT
         const accounts = {
             owner: currentWallet,
             funder: secondaryFunder ?? currentWallet,
@@ -129,6 +143,8 @@ export class GfxStakeRewards {
             userRewardsHoldingAccount: userRewardsHoldingAccount,
             
             systemProgram: SystemProgram.programId,
+            usdcMint,
+            userRewardsHoldingAccount: getAssociatedTokenAddressSync(usdcMint, userMetadata[0], true)
         }
         
         return await this.program.methods
@@ -176,29 +192,106 @@ export class GfxStakeRewards {
         ])
         
         return await this.program.methods
-          .crank(CRANK_AMOUNT)
-          .accounts({
-              stakePool: ADDRESSES[this.network].STAKE_POOL,
-              usdcFeeVault: usdcFeeVault,
-              usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
-              usdcFeeSigner: usdcFeeSigner[0],
-              gfxSslProgram: ADDRESSES[this.network].SSL_PROGRAM_ID,
-              controller: ADDRESSES[this.network].GFX_CONTROLLER,
-              pair,
-              sslIn,
-              sslOut,
-              liabilityVaultIn,
-              swappedLiabilityVaultIn,
-              liabilityVaultOut,
-              swappedLiabilityVaultOut,
-              userInAta,
-              feeCollectorAta,
-              userWallet: feeSigner[0],
-              feeCollector: ADDRESSES[this.network].SSL_SWAP_FEE_COLLECTOR,
-              tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .instruction()
-        
+            .crank(CRANK_AMOUNT)
+            .accounts({
+                stakePool: ADDRESSES[this.network].STAKE_POOL,
+                usdcFeeVault: usdcFeeVault,
+                usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+                usdcFeeSigner: usdcFeeSigner[0],
+                gfxSslProgram: ADDRESSES[this.network].SSL_PROGRAM_ID,
+                controller: ADDRESSES[this.network].GFX_CONTROLLER,
+                pair,
+                sslIn,
+                sslOut,
+                liabilityVaultIn,
+                swappedLiabilityVaultIn,
+                liabilityVaultOut,
+                swappedLiabilityVaultOut,
+                userInAta,
+                feeCollectorAta,
+                userWallet: feeSigner[0],
+                feeCollector: ADDRESSES[this.network].SSL_SWAP_FEE_COLLECTOR,
+                tokenProgram: TOKEN_PROGRAM_ID,
+            })
+            .instruction()
+    }
+
+    /**
+     * Cranks the current rewards program
+     * @param mint specific token the user wants to crank e.g. USDC, BTC, GOFX
+     * @returns Promise<TransactionInstruction>
+     */
+    async crankV2Single(mint: PublicKey, swap: SwapRouteParams): Promise<TransactionInstruction> {
+      const usdcFeeSigner = PublicKey.findProgramAddressSync(
+        [TOKEN_SEEDS.feeCollector],
+        this.programId
+      )
+      const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], this.programId)
+      const usdcFeeVault = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, feeSigner[0], true)
+      const userInAta = await getAssociatedTokenAddress(mint, feeSigner[0], true)
+
+      return await this.program.methods
+        .crankV2SingleRoute(swap.minOut ?? CRANK_AMOUNT)
+        .accounts({
+          stakePool: ADDRESSES[this.network].STAKE_POOL,
+          usdcFeeVault: usdcFeeVault,
+          usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+          usdcFeeSigner: usdcFeeSigner[0],
+          gfxAmmProgram: swap.ammProgram,
+          ammAuthority: swap.authority,
+          ammConfig: swap.config,
+          ammPoolState: swap.state,
+          ammInputVault: swap.inputVault,
+          ammOutputVault: swap.outputVault,
+          ammObservationState: swap.observationState,
+          inputTokenMint: mint,
+          outputTokenMint: ADDRESSES[this.network].USDC_MINT,
+          inputTokenProgram: swap.inputTokenProgram,
+          outputTokenProgram: TOKEN_PROGRAM_ID,
+          userInAta
+        })
+        .instruction()
+    }
+
+    /**
+     * Runs a permissionless crank to transfer usdc from the usdc-reward-vault to
+     * a particular user's rewards-holding-account
+     * @param user user to crank rewards for
+     * @returns Promise<TransactionInstruction>
+     */
+    async crankUserRewardsHoldingAccount(user?: PublicKey): Promise<TransactionInstruction> {
+      user = user ?? this.wallet.publicKey;
+      const [usdcRewardSigner, userMetadata] = await Promise.all([
+        PublicKey.findProgramAddressSync(
+            [TOKEN_SEEDS.usdcRewardSigner],
+            this.programId
+        )
+        ,
+        PublicKey.findProgramAddressSync(
+            [TOKEN_SEEDS.userMetaData, user.toBuffer()],
+            this.programId
+        )
+      ])
+      const userRewardsHoldingAccount = await getAssociatedTokenAddress(
+        ADDRESSES[this.network].USDC_MINT,
+        userMetadata[0],
+        true
+      )
+
+      return await this.program.methods
+        .crankUserRewardsHoldingAccount()
+        .accounts({
+          user,
+          userRewardsHoldingAccount,
+          stakePool: ADDRESSES[this.network].STAKE_POOL,
+          gofxVault: ADDRESSES[this.network].GOFX_VAULT,
+          usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+          usdcRewardSigner: usdcRewardSigner[0],
+          userMetadata: userMetadata[0],
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId
+        })
+        .instruction()
     }
     
     /**
@@ -209,10 +302,10 @@ export class GfxStakeRewards {
      */
     async stake(amount: anchor.BN, walletPublicKey?: PublicKey,): Promise<TransactionInstruction> {
         const wallet = walletPublicKey ?? this.wallet.publicKey
-        const [ ownerGofx, usdcRewardSigner, userMetadata] = await Promise.all([
+        const [ownerGofx, usdcRewardSigner, userMetadata] = await Promise.all([
             getAssociatedTokenAddress(
-              ADDRESSES[this.network].GOFX_MINT,
-              wallet
+                ADDRESSES[this.network].GOFX_MINT,
+                wallet
             ),
             PublicKey.findProgramAddressSync(
               [TOKEN_SEEDS.usdcRewardSigner],
@@ -224,21 +317,25 @@ export class GfxStakeRewards {
               GfxStakeRewards.programId
             )
         ])
-        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0],true)
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(
+          ADDRESSES[this.network].USDC_MINT,
+          userMetadata[0],
+          true
+        )
         return this.program.methods
-          .stake(amount)
-          .accounts({
-              owner: wallet,
-              stakePool: ADDRESSES[this.network].STAKE_POOL,
-              userRewardsHoldingAccount: userRewardsHoldingAccount,
-              usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
-              usdcRewardSigner: usdcRewardSigner[0],
-              ownerGofx: ownerGofx,
-              gofxVault: ADDRESSES[this.network].GOFX_VAULT,
-              userMetadata: userMetadata[0],
-              tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .instruction()
+            .stake(amount)
+            .accounts({
+                owner: wallet,
+                stakePool: ADDRESSES[this.network].STAKE_POOL,
+                usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+                userRewardsHoldingAccount,
+                usdcRewardSigner: usdcRewardSigner[0],
+                ownerGofx: ownerGofx,
+                gofxVault: ADDRESSES[this.network].GOFX_VAULT,
+                userMetadata: userMetadata[0],
+                tokenProgram: TOKEN_PROGRAM_ID,
+            })
+            .instruction()
     }
     
     /**
@@ -263,22 +360,26 @@ export class GfxStakeRewards {
               GfxStakeRewards.programId
             )
         ])
-        const userRewardsHoldingAccount = await this.getUserRewardsHoldingAccount(wallet)
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(
+          ADDRESSES[this.network].USDC_MINT,
+          userMetadata[0],
+          true
+        )
         return this.program.methods
-          .unstake(amount)
-          .accounts({
-              owner: wallet,
-              stakePool: ADDRESSES[this.network].STAKE_POOL,
-              userRewardsHoldingAccount: userRewardsHoldingAccount,
-              gofxVault: ADDRESSES[this.network].GOFX_VAULT,
-              gofxUnstakedVault: ADDRESSES[this.network].GOFX_UNSTAKED_VAULT,
-              gofxVaultSigner: gofxVaultSigner[0],
-              usdcRewardSigner: usdcRewardSigner[0],
-              usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
-              userMetadata: userMetadata[0],
-              tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .instruction()
+            .unstake(amount)
+            .accounts({
+                owner: wallet,
+                stakePool: ADDRESSES[this.network].STAKE_POOL,
+                gofxVault: ADDRESSES[this.network].GOFX_VAULT,
+                gofxUnstakedVault: ADDRESSES[this.network].GOFX_UNSTAKED_VAULT,
+                gofxVaultSigner: gofxVaultSigner[0],
+                usdcRewardSigner: usdcRewardSigner[0],
+                usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+                userRewardsHoldingAccount,
+                userMetadata: userMetadata[0],
+                tokenProgram: TOKEN_PROGRAM_ID,
+            })
+            .instruction()
     }
     
     /**
@@ -351,19 +452,23 @@ export class GfxStakeRewards {
             getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, wallet),
             PublicKey.findProgramAddressSync([TOKEN_SEEDS.userMetaData, wallet.toBuffer()], GfxStakeRewards.programId)
         ])
-        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0],true)
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(
+          ADDRESSES[this.network].USDC_MINT,
+          userMetadata[0],
+          true
+        )
         return await this.program.methods
-          .claimFees()
-          .accounts({
-              owner: wallet,
-              usdcMint: ADDRESSES[this.network].USDC_MINT,
-              userRewardsHoldingAccount: userRewardsHoldingAccount,
-              userUsdcAccount: ownerUsdc,
-              usdcRewardSigner: usdcSigner[0],
-              userMetadata: userMetadata[0],
-              tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .instruction()
+            .claimFees()
+            .accounts({
+                owner: wallet,
+                userMetadata: userMetadata[0],
+                userRewardsHoldingAccount,
+                userUsdcAccount: ownerUsdc,
+                usdcRewardSigner: usdcSigner[0],
+                tokenProgram: TOKEN_PROGRAM_ID,
+                usdcMint: ADDRESSES[this.network].USDC_MINT
+            })
+            .instruction()
     }
     
     /**
@@ -378,19 +483,27 @@ export class GfxStakeRewards {
           [TOKEN_SEEDS.userMetaData, wallet.toBuffer()],
           GfxStakeRewards.programId
         )
-        const userRewardsHoldingAccount = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, userMetadata[0],true)
-        
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(
+          ADDRESSES[this.network].USDC_MINT,
+          userMetadata[0],
+          true
+        )
+        const userRewardsHoldingAccount = await getAssociatedTokenAddress(
+          ADDRESSES[this.network].USDC_MINT,
+          userMetadata[0],
+          true
+        )
+
         return await this.program.methods
-          .closeUserAccount()
-          .accounts({
-              owner: wallet,
-              rentRecipient: rentRecipient ?? wallet,
-              userMetadata: userMetadata[0],
-              userRewardsHoldingAccount: userRewardsHoldingAccount,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-          })
-          .instruction()
+            .closeUserAccount()
+            .accounts({
+                owner: wallet,
+                rentRecipient: rentRecipient ?? wallet,
+                userMetadata: userMetadata[0],
+                systemProgram: SystemProgram.programId,
+                userRewardsHoldingAccount, 
+            })
+            .instruction()
     }
     
     /**
