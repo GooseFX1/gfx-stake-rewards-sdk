@@ -18,7 +18,7 @@ import {
     AnchorProvider,
     Wallet,
 } from '@project-serum/anchor'
-import {getAccount, getAssociatedTokenAddress, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID} from '@solana/spl-token'
+import {createAssociatedTokenAccountIdempotentInstruction, getAccount, getAssociatedTokenAddress, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID} from '@solana/spl-token'
 import * as GfxStakeRewardsProgram from '../idl/gfx_stake_rewards.json'
 import { IDL } from '../types'
 import {Buffer} from 'buffer'
@@ -44,7 +44,10 @@ export interface SwapRouteParams {
   inputVault: PublicKey,
   outputVault: PublicKey,
   inputTokenProgram: PublicKey,
+  outputTokenProgram: PublicKey,
   observationState: PublicKey,
+  inputMint: PublicKey,
+  outputMint: PublicKey,
 };
 
 export class GfxStakeRewards {
@@ -221,17 +224,17 @@ export class GfxStakeRewards {
      * @param mint specific token the user wants to crank e.g. USDC, BTC, GOFX
      * @returns Promise<TransactionInstruction>
      */
-    async crankV2Single(mint: PublicKey, swap: SwapRouteParams): Promise<TransactionInstruction> {
+    async crankV2Single(swap: SwapRouteParams): Promise<TransactionInstruction> {
       const usdcFeeSigner = PublicKey.findProgramAddressSync(
         [TOKEN_SEEDS.feeCollector],
         this.programId
       )
       const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], this.programId)
       const usdcFeeVault = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, feeSigner[0], true)
-      const userInAta = await getAssociatedTokenAddress(mint, feeSigner[0], true)
+      const userInAta = await getAssociatedTokenAddress(swap.inputMint, feeSigner[0], true)
 
       return await this.program.methods
-        .crankV2SingleRoute(swap.minOut ?? CRANK_AMOUNT)
+        .crankV2Single(swap.minOut ?? CRANK_AMOUNT)
         .accounts({
           stakePool: ADDRESSES[this.network].STAKE_POOL,
           usdcFeeVault: usdcFeeVault,
@@ -244,13 +247,69 @@ export class GfxStakeRewards {
           ammInputVault: swap.inputVault,
           ammOutputVault: swap.outputVault,
           ammObservationState: swap.observationState,
-          inputTokenMint: mint,
+          inputTokenMint: swap.inputMint,
           outputTokenMint: ADDRESSES[this.network].USDC_MINT,
           inputTokenProgram: swap.inputTokenProgram,
           outputTokenProgram: TOKEN_PROGRAM_ID,
           userInAta
         })
         .instruction()
+    }
+
+    /**
+     * Cranks the current rewards program via a two-hop swap
+     * @param mint specific token the user wants to crank e.g. USDC, BTC, GOFX
+     * @returns Promise<TransactionInstruction>
+     */
+    async crankV2TwoHop(swap1: SwapRouteParams, swap2: SwapRouteParams): Promise<TransactionInstruction[]> {
+      const usdcFeeSigner = PublicKey.findProgramAddressSync(
+        [TOKEN_SEEDS.feeCollector],
+        this.programId
+      )
+      const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], this.programId)
+      const usdcFeeVault = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, feeSigner[0], true)
+      const userInAta = await getAssociatedTokenAddress(swap1.inputMint, feeSigner[0], true)
+      const intermediateAta = await getAssociatedTokenAddress(swap1.outputMint, feeSigner[0], true)
+
+      const createAta = createAssociatedTokenAccountIdempotentInstruction(
+        this.wallet.publicKey,
+        intermediateAta,
+        feeSigner[0],
+        swap1.outputMint
+      )
+
+      const crank = await this.program.methods
+        .crankV2TwoHop(swap1.minOut ?? CRANK_AMOUNT, swap2.minOut ?? CRANK_AMOUNT)
+        .accounts({
+          stakePool: ADDRESSES[this.network].STAKE_POOL,
+          usdcFeeVault: usdcFeeVault,
+          usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+          usdcFeeSigner: usdcFeeSigner[0],
+          gfxAmmProgram: swap1.ammProgram,
+          ammAuthority: swap1.authority,
+          ammConfig: swap1.config,
+          hop1AmmPoolState: swap1.state,
+          hop1AmmInputVault: swap1.inputVault,
+          hop1AmmOutputVault: swap1.outputVault,
+          hop1AmmObservationState: swap1.observationState,
+          userInAta,
+
+          inputTokenMint: swap1.inputMint,
+          intermediateTokenMint: swap1.outputMint,
+          outputTokenMint: swap2.outputMint,
+          inputTokenProgram: swap1.inputTokenProgram,
+          intermediateTokenProgram: swap1.outputTokenProgram,
+          outputTokenProgram: TOKEN_PROGRAM_ID,
+          intermediateTokenAccount: intermediateAta,
+
+          hop2AmmPoolState: swap2.state,
+          hop2AmmInputVault: swap2.inputVault,
+          hop2AmmOutputVault: swap2.outputVault,
+          hop2AmmObservationState: swap2.observationState,
+        })
+        .instruction()
+
+      return [createAta, crank]
     }
 
     /**

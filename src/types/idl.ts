@@ -313,7 +313,7 @@ export type GfxStakeRewardsProgramTypes = {
       ]
     },
     {
-      "name": "crankV2SingleRoute",
+      "name": "crankV2Single",
       "accounts": [
         {
           "name": "stakePool",
@@ -403,7 +403,7 @@ export type GfxStakeRewardsProgramTypes = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "This must be a USDC token account owned by the [FeesCollected] PDA."
+            "This must be a token account owned by the [FeesCollected] PDA."
           ]
         },
         {
@@ -423,6 +423,159 @@ export type GfxStakeRewardsProgramTypes = {
       "args": [
         {
           "name": "minOut",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "crankV2TwoHop",
+      "accounts": [
+        {
+          "name": "stakePool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Global state"
+          ]
+        },
+        {
+          "name": "usdcFeeVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "In the Gamma swap CPI, this is user_out_ata"
+          ]
+        },
+        {
+          "name": "usdcRewardVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "USDC reward account, fees distribute from here."
+          ]
+        },
+        {
+          "name": "usdcFeeSigner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "that swaps an arbitrary token for USDC."
+          ]
+        },
+        {
+          "name": "gfxAmmProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The swap CPI calls this program"
+          ]
+        },
+        {
+          "name": "ammAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmPoolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmObservationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmInputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmOutputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userInAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "This must be a token account owned by the [FeesCollected] PDA."
+          ]
+        },
+        {
+          "name": "inputTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "inputTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "the first hop.",
+            "This is a token account owned by the [FeesCollected] PDA and is",
+            "provided as input to the second hop."
+          ]
+        },
+        {
+          "name": "hop2AmmPoolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmObservationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmInputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmOutputVault",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "minOutHop1",
+          "type": "u64"
+        },
+        {
+          "name": "minOutHop2",
           "type": "u64"
         }
       ]
@@ -1622,7 +1775,7 @@ export const IDL: GfxStakeRewardsProgramTypes = {
       ]
     },
     {
-      "name": "crankV2SingleRoute",
+      "name": "crankV2Single",
       "accounts": [
         {
           "name": "stakePool",
@@ -1712,7 +1865,7 @@ export const IDL: GfxStakeRewardsProgramTypes = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "This must be a USDC token account owned by the [FeesCollected] PDA."
+            "This must be a token account owned by the [FeesCollected] PDA."
           ]
         },
         {
@@ -1732,6 +1885,159 @@ export const IDL: GfxStakeRewardsProgramTypes = {
       "args": [
         {
           "name": "minOut",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "crankV2TwoHop",
+      "accounts": [
+        {
+          "name": "stakePool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Global state"
+          ]
+        },
+        {
+          "name": "usdcFeeVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "In the Gamma swap CPI, this is user_out_ata"
+          ]
+        },
+        {
+          "name": "usdcRewardVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "USDC reward account, fees distribute from here."
+          ]
+        },
+        {
+          "name": "usdcFeeSigner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "that swaps an arbitrary token for USDC."
+          ]
+        },
+        {
+          "name": "gfxAmmProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The swap CPI calls this program"
+          ]
+        },
+        {
+          "name": "ammAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmPoolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmObservationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmInputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmOutputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userInAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "This must be a token account owned by the [FeesCollected] PDA."
+          ]
+        },
+        {
+          "name": "inputTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "inputTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "the first hop.",
+            "This is a token account owned by the [FeesCollected] PDA and is",
+            "provided as input to the second hop."
+          ]
+        },
+        {
+          "name": "hop2AmmPoolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmObservationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmInputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmOutputVault",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "minOutHop1",
+          "type": "u64"
+        },
+        {
+          "name": "minOutHop2",
           "type": "u64"
         }
       ]
