@@ -18,9 +18,13 @@ import {
     AnchorProvider,
     Wallet,
 } from '@project-serum/anchor'
-import {createAssociatedTokenAccountIdempotentInstruction, getAccount, getAssociatedTokenAddress, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID} from '@solana/spl-token'
-import * as GfxStakeRewardsProgram from '../idl/gfx_stake_rewards.json'
-import { IDL } from '../types'
+import {
+  createAssociatedTokenAccountIdempotentInstruction, 
+  getAccount, 
+  getAssociatedTokenAddress, 
+  getAssociatedTokenAddressSync, 
+  TOKEN_PROGRAM_ID
+} from '@solana/spl-token'
 import {Buffer} from 'buffer'
 import {
     FeesCollected,
@@ -104,7 +108,7 @@ export class GfxStakeRewards {
     newProgram(commitment?: ConfirmOptions) {
         return new Program(
             IDL,
-            this.programId.toBase58(),
+            GfxStakeRewards.programId.toBase58(),
             new AnchorProvider(
                 this.connection,
                 this.wallet,
@@ -141,10 +145,7 @@ export class GfxStakeRewards {
             owner: currentWallet,
             funder: secondaryFunder ?? currentWallet,
             stakePool: ADDRESSES[this.network].STAKE_POOL,
-            usdcMint: ADDRESSES[this.network].USDC_MINT,
             userMetadata: userMetadata[0],
-            userRewardsHoldingAccount: userRewardsHoldingAccount,
-            
             systemProgram: SystemProgram.programId,
             usdcMint,
             userRewardsHoldingAccount: getAssociatedTokenAddressSync(usdcMint, userMetadata[0], true)
@@ -227,9 +228,9 @@ export class GfxStakeRewards {
     async crankV2Single(swap: SwapRouteParams): Promise<TransactionInstruction> {
       const usdcFeeSigner = PublicKey.findProgramAddressSync(
         [TOKEN_SEEDS.feeCollector],
-        this.programId
+        GfxStakeRewards.programId
       )
-      const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], this.programId)
+      const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], GfxStakeRewards.programId)
       const usdcFeeVault = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, feeSigner[0], true)
       const userInAta = await getAssociatedTokenAddress(swap.inputMint, feeSigner[0], true)
 
@@ -264,9 +265,9 @@ export class GfxStakeRewards {
     async crankV2TwoHop(swap1: SwapRouteParams, swap2: SwapRouteParams): Promise<TransactionInstruction[]> {
       const usdcFeeSigner = PublicKey.findProgramAddressSync(
         [TOKEN_SEEDS.feeCollector],
-        this.programId
+        GfxStakeRewards.programId
       )
-      const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], this.programId)
+      const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], GfxStakeRewards.programId)
       const usdcFeeVault = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, feeSigner[0], true)
       const userInAta = await getAssociatedTokenAddress(swap1.inputMint, feeSigner[0], true)
       const intermediateAta = await getAssociatedTokenAddress(swap1.outputMint, feeSigner[0], true)
@@ -323,12 +324,12 @@ export class GfxStakeRewards {
       const [usdcRewardSigner, userMetadata] = await Promise.all([
         PublicKey.findProgramAddressSync(
             [TOKEN_SEEDS.usdcRewardSigner],
-            this.programId
+            GfxStakeRewards.programId
         )
         ,
         PublicKey.findProgramAddressSync(
             [TOKEN_SEEDS.userMetaData, user.toBuffer()],
-            this.programId
+            GfxStakeRewards.programId
         )
       ])
       const userRewardsHoldingAccount = await getAssociatedTokenAddress(
@@ -547,12 +548,6 @@ export class GfxStakeRewards {
           userMetadata[0],
           true
         )
-        const userRewardsHoldingAccount = await getAssociatedTokenAddress(
-          ADDRESSES[this.network].USDC_MINT,
-          userMetadata[0],
-          true
-        )
-
         return await this.program.methods
             .closeUserAccount()
             .accounts({
