@@ -18,7 +18,7 @@ export const ADDRESSES = {
             '8CxKnuJeoeQXFwiG6XiGY2akBjvJA5k3bE52BfnuEmNQ'
         ),
         SSL_PROGRAM_ID: new PublicKey(
-            '7WduLbRfYhTJktjLw5FDEyrqoEv61aTTCuGAetgLjzN5'
+            'GFXSwpZBSU9LF1gHRpRv2u967ACKKncFnfy3VKyQqwhp'
         ),
         STAKE_POOL: new PublicKey(
             'Eu8eZF1dfR1hXUwHbngEsDBf3kMhLuRSSaYcr67USBbj'
