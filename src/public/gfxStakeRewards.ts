@@ -40,7 +40,6 @@ import {
 import {SSL, Swap} from 'goosefx-ssl-sdk'
 
 export interface SwapRouteParams {
-  minOut?: anchor.BN,
   ammProgram: PublicKey,
   state: PublicKey,
   config: PublicKey,
@@ -52,6 +51,8 @@ export interface SwapRouteParams {
   observationState: PublicKey,
   inputMint: PublicKey,
   outputMint: PublicKey,
+  minOut?: anchor.BN,
+  inputTokenAccount?: PublicKey
 };
 
 export class GfxStakeRewards {
@@ -232,7 +233,7 @@ export class GfxStakeRewards {
       )
       const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], GfxStakeRewards.programId)
       const usdcFeeVault = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, feeSigner[0], true)
-      const userInAta = await getAssociatedTokenAddress(swap.inputMint, feeSigner[0], true)
+      const userInAta = swap.inputTokenAccount ?? await getAssociatedTokenAddress(swap.inputMint, feeSigner[0], true)
 
       return await this.program.methods
         .crankV2Single(swap.minOut ?? CRANK_AMOUNT)
@@ -269,7 +270,7 @@ export class GfxStakeRewards {
       )
       const feeSigner = PublicKey.findProgramAddressSync([TOKEN_SEEDS.feeCollector], GfxStakeRewards.programId)
       const usdcFeeVault = await getAssociatedTokenAddress(ADDRESSES[this.network].USDC_MINT, feeSigner[0], true)
-      const userInAta = await getAssociatedTokenAddress(swap1.inputMint, feeSigner[0], true)
+      const userInAta = swap1.inputTokenAccount ?? await getAssociatedTokenAddress(swap1.inputMint, feeSigner[0], true)
       const intermediateAta = await getAssociatedTokenAddress(swap1.outputMint, feeSigner[0], true)
 
       const createAta = createAssociatedTokenAccountIdempotentInstruction(
