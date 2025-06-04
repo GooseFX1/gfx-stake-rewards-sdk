@@ -1149,9 +1149,403 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "initializeTokenCrank",
+      "docs": [
+        "Initialize a generic token-crank, configured to specific `output-mint` and `destination-signer`"
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenCrank",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "crankSigner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The crank output mint"
+          ]
+        },
+        {
+          "name": "crankOutputVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "This account receives the crank output and transfers it to the distribution vault"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "destinationOwner",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "crankTokensGamma",
+      "docs": [
+        "For a specific crank, swap the balance of one of its crank-signer's token-accounts to the crank output-mint"
+      ],
+      "accounts": [
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Crank state"
+          ]
+        },
+        {
+          "name": "crankSigner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "crankInputAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "This must be a token account owned by the crank_signer PDA."
+          ]
+        },
+        {
+          "name": "destinationOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gammaProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The swap CPI calls this program"
+          ]
+        },
+        {
+          "name": "ammAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmPoolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmObservationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmInputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop1AmmOutputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "inputTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "inputTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "intermediateTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "outputTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "hop1CrankOutputVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "the first hop.",
+            "This is a token account owned by the `crank_signer` PDA and is",
+            "provided as input to the second hop."
+          ]
+        },
+        {
+          "name": "hop2AmmPoolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmObservationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmInputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "hop2AmmOutputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "lastHopCrankOutputVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The vault for holding the output of the last hop(either first or second depending on the case)"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "minOutHop1",
+          "type": "u64"
+        },
+        {
+          "name": "minOutHop2",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initializeLstRewards",
+      "docs": [
+        "Initialize the LST rewards instance"
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "lstRewards",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "authority",
+          "type": "publicKey"
+        },
+        {
+          "name": "destinationReserveAccount",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "updateLstRewardsParams",
+      "docs": [
+        "Update the params for LSTRewards, such as authority or the destination reserve account"
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "lstRewards",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "authority",
+          "type": {
+            "option": "publicKey"
+          }
+        },
+        {
+          "name": "destinationReserveAccount",
+          "type": {
+            "option": "publicKey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "transferLstRewards",
+      "docs": [
+        "Transfer SOL from rewards native token-account to the destination reserve"
+      ],
+      "accounts": [
+        {
+          "name": "lstRewards",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardsTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "reserveAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "TokenCrank",
+      "docs": [
+        "A global account that stores the result of cranking multiple tokens owned by",
+        "a particular PDA to a single output mint."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "outputMint",
+            "docs": [
+              "The output mint for token cranks"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "totalAccumulatedTokens",
+            "docs": [
+              "A monotonically increasing value, that increments each time the output-mint",
+              "is added to the [OutputVault]'s associated token account"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "protocolActivatedAt",
+            "docs": [
+              "Protocol activation time"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "destinationOwner",
+            "docs": [
+              "The signer of the token-account output tokens are transferred to"
+            ],
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LSTRewards",
+      "docs": [
+        "Account storing information about LSTRewards. This account also acts",
+        "as the signer to transfer SOL from its token-account to a reserve-account."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "The authority of this account.",
+              "Allowed to set a new `authority`, `crank`, or `reserve_account`"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "reserveAccount",
+            "docs": [
+              "The reserve stake account that receives SOL from the crank output"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "totalLamportsDistributed",
+            "docs": [
+              "The total number of lamports send to the reserve account"
+            ],
+            "type": "u128"
+          }
+        ]
+      }
+    },
     {
       "name": "StakePool",
       "docs": [
@@ -1456,9 +1850,11 @@
       "code": 6010,
       "name": "CannotCloseUserAccountRewards",
       "msg": "Cannot close a user account until all rewards are claimed"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidCrank",
+      "msg": "Crank instruction does not result in the expected output mint"
     }
-  ],
-  "metadata": {
-    "address": "STKRWxT4irmTthSJydggspWmkc3ovYHx62DHLPVv1f1"
-  }
+  ]
 }

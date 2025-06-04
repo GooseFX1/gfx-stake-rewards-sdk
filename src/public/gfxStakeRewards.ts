@@ -8,6 +8,7 @@ import {
 import {
     ConfirmOptions,
     Connection,
+    Keypair,
     PublicKey,
     SystemProgram,
     TransactionInstruction
@@ -23,6 +24,7 @@ import {
   getAccount, 
   getAssociatedTokenAddress, 
   getAssociatedTokenAddressSync, 
+  NATIVE_MINT, 
   TOKEN_PROGRAM_ID
 } from '@solana/spl-token'
 import {Buffer} from 'buffer'
@@ -54,6 +56,10 @@ export interface SwapRouteParams {
   minOut?: anchor.BN,
   inputTokenAccount?: PublicKey
 };
+
+
+type LSTRewardsAccount = anchor.IdlAccounts<GfxStakeRewardsProgramTypes>['lstRewards']
+type TokenCrankAccount = anchor.IdlAccounts<GfxStakeRewardsProgramTypes>['tokenCrank']
 
 export class GfxStakeRewards {
     program: Program<GfxStakeRewardsProgramTypes>
@@ -427,20 +433,177 @@ export class GfxStakeRewards {
           true
         )
         return this.program.methods
-            .unstake(amount)
-            .accounts({
-                owner: wallet,
-                stakePool: ADDRESSES[this.network].STAKE_POOL,
-                gofxVault: ADDRESSES[this.network].GOFX_VAULT,
-                gofxUnstakedVault: ADDRESSES[this.network].GOFX_UNSTAKED_VAULT,
-                gofxVaultSigner: gofxVaultSigner[0],
-                usdcRewardSigner: usdcRewardSigner[0],
-                usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
-                userRewardsHoldingAccount,
-                userMetadata: userMetadata[0],
-                tokenProgram: TOKEN_PROGRAM_ID,
-            })
-            .instruction()
+          .unstake(amount)
+          .accounts({
+              owner: wallet,
+              stakePool: ADDRESSES[this.network].STAKE_POOL,
+              gofxVault: ADDRESSES[this.network].GOFX_VAULT,
+              gofxUnstakedVault: ADDRESSES[this.network].GOFX_UNSTAKED_VAULT,
+              gofxVaultSigner: gofxVaultSigner[0],
+              usdcRewardSigner: usdcRewardSigner[0],
+              usdcRewardVault: ADDRESSES[this.network].USDC_REWARD_VAULT,
+              userRewardsHoldingAccount,
+              userMetadata: userMetadata[0],
+              tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .instruction()
+    }
+
+    /**
+     * Initializes a token-crank account with configured params
+     * @param tokenCrank The newly-created address for the token-crank state
+     * @param outputMint The output mint for crank operations
+     * @param destinationOwner The owner of token-accounts for crank tokens output
+     * @param payer The payer
+     * @returns 
+     */
+    async initializeTokenCrank(
+      tokenCrank: PublicKey,
+      outputMint: PublicKey,
+      destinationOwner: PublicKey,
+      payer?: PublicKey
+    ): Promise<TransactionInstruction> {
+      const crankSigner = this.getCrankSignerPDA(tokenCrank).publicKey
+      const crankOutputVault = await getAssociatedTokenAddress(
+        outputMint,
+        crankSigner,
+        true
+      )
+
+      return await this.program.methods
+        .initializeTokenCrank(destinationOwner)
+        .accounts({
+          payer: payer ?? this.wallet.publicKey,
+          tokenCrank,
+          crankSigner,
+          outputMint,
+          crankOutputVault,
+        })
+        .instruction()
+    }
+
+    /**
+     * Crank tokens for a specific crank account
+     * @param crank The account for which to crank tokens
+     * @param swap1 
+     * @param swap2 
+     * @returns an array on instructions
+     */
+    async crankTokensViaGammaSwap(
+      crank: PublicKey,
+      swap1: SwapRouteParams, 
+      swap2: SwapRouteParams | null
+    ): Promise<TransactionInstruction[]> {
+      const isSingleHop = swap2 === null
+      const crankSigner = this.getCrankSignerPDA(crank).publicKey
+      const crankInputAta = swap1.inputTokenAccount ?? await getAssociatedTokenAddress(swap1.inputMint, crankSigner, true)
+      const hop1CrankOutputVault = await getAssociatedTokenAddress(swap1.outputMint, crankSigner, true)
+
+      /// Only create hop1OutputAta if it's an intermediate step. Otherwise, it is expected to already exist
+      const createhop1OutputAta = !isSingleHop ? createAssociatedTokenAccountIdempotentInstruction(
+        this.wallet.publicKey,
+        hop1CrankOutputVault,
+        crankSigner,
+        swap1.outputMint
+      ) : null
+
+      const lastHopCrankOutputVault = swap2 ? await getAssociatedTokenAddress(
+        swap2.outputMint,
+        crankSigner,
+        true
+      ) : hop1CrankOutputVault
+
+      const crankIx = await this.program.methods
+        .crankTokensGamma(swap1.minOut ?? CRANK_AMOUNT, swap2?.minOut ?? CRANK_AMOUNT)
+        .accounts({
+          crank: ADDRESSES[this.network].STAKE_POOL,
+          crankSigner,
+          crankInputAta,
+          gammaProgram: swap1.ammProgram,
+          ammAuthority: swap1.authority,
+          ammConfig: swap1.config,
+          hop1AmmPoolState: swap1.state,
+          hop1AmmInputVault: swap1.inputVault,
+          hop1AmmOutputVault: swap1.outputVault,
+          hop1AmmObservationState: swap1.observationState,
+
+          inputTokenMint: swap1.inputMint,
+          intermediateTokenMint: swap1.outputMint,
+          outputTokenMint: swap2?.outputMint ?? this.program.programId,
+          inputTokenProgram: swap1.inputTokenProgram,
+          intermediateTokenProgram: swap1.outputTokenProgram,
+          outputTokenProgram: TOKEN_PROGRAM_ID,
+          hop1CrankOutputVault,
+
+          hop2AmmPoolState: swap2?.state ?? this.program.programId,
+          hop2AmmInputVault: swap2?.inputVault ?? this.program.programId,
+          hop2AmmOutputVault: swap2?.outputVault ?? this.program.programId,
+          hop2AmmObservationState: swap2?.observationState ?? this.program.programId,
+          lastHopCrankOutputVault,
+        })
+        .instruction()
+
+      return createhop1OutputAta ? [createhop1OutputAta, crankIx] : [crankIx]
+    }
+
+    /**
+     * Initialize the `LSTRewards` account
+     * @param authority The configured authority for the account
+     * @param destinationReserveAccount The reserve-account to receive SOL
+     * @param payer The rent payer
+     * @returns an instruction
+     */
+    async initializeLstRewards(
+      authority: PublicKey,
+      destinationReserveAccount: PublicKey,
+      payer?: PublicKey
+    ): Promise<TransactionInstruction> {
+      return this.program.methods
+        .initializeLstRewards(authority, destinationReserveAccount)
+        .accounts({
+          payer: payer ?? this.wallet.publicKey,
+        })
+        .instruction()
+    }
+
+    /**
+     * Updates params for the `LSTRewards` account
+     * @param newAuthority The (optional) new authority to configure
+     * @param newDestinationReserveAccount The (optional) new destination-reserve-account to configure
+     * @param authority The authority for the transaction
+     * @returns An instruction
+     */
+    async updateLstRewards(
+      newAuthority: PublicKey | null,
+      newDestinationReserveAccount: PublicKey | null,
+      authority?: PublicKey
+    ): Promise<TransactionInstruction> {
+      return this.program.methods
+        .updateLstRewardsParams(newAuthority, newDestinationReserveAccount)
+        .accounts({
+          authority: authority ?? this.wallet.publicKey,
+        })
+        .instruction()
+    }
+
+    /**
+     * Transfer LST rewards
+     * @param reserveAccount The stake reserve account to transfer SOL to
+     * @param outputMint Typically SOL
+     * @returns An instruction
+     */
+    async transferLSTRewards(reserveAccount: PublicKey, outputMint?: PublicKey): Promise<TransactionInstruction> {
+      const lstRewards = this.getLSTRewardsPDA().publicKey
+      const outputTokenMint = outputMint ?? NATIVE_MINT
+      const rewardsTokenAccount = await getAssociatedTokenAddress(outputTokenMint, lstRewards, true)
+
+      return this.program.methods
+        .transferLstRewards()
+        .accounts({
+          rewardsTokenAccount, 
+          reserveAccount,         
+        })
+        .instruction()
     }
     
     /**
@@ -646,6 +809,49 @@ export class GfxStakeRewards {
             }
         }
         return tickets
+    }
+    
+    /**
+     * Derives the address of the crank-signer
+     * @param programOverride optional program-id override
+     * @returns the derived public-key and nonce
+     */
+    getCrankSignerPDA(crank: PublicKey, programOverride?: PublicKey): { publicKey: PublicKey, nonce: number } {
+      const [publicKey, nonce] =  PublicKey.findProgramAddressSync(
+        [Buffer.from('crank_signer', 'utf-8'), crank.toBuffer()], programOverride ?? GfxStakeRewards.programId
+      )
+      return { publicKey, nonce }
+    }
+
+    /**
+     * Derives the address of the LSTRewards account
+     * @param programOverride optional program-id override
+     * @returns the derived public-key and nonce
+     */
+    getLSTRewardsPDA(programOverride?: PublicKey): { publicKey: PublicKey, nonce: number } {
+      const [publicKey, nonce] =  PublicKey.findProgramAddressSync(
+        [Buffer.from('lst_rewards', 'utf-8')], programOverride ?? GfxStakeRewards.programId
+      )
+      return { publicKey, nonce }
+    }
+
+    /**
+     * Fetches deserialized state for a `LSTRewards` account
+     * @param address the account address
+     * @returns the deserialized account
+     */
+    async getLSTRewardsAccount(address?: PublicKey): Promise<LSTRewardsAccount> {
+      const lstRewards = address ?? this.getLSTRewardsPDA().publicKey
+      return this.program.account.lstRewards.fetch(lstRewards)
+    }
+
+    /**
+     * Fetches deserialized state for a `TokenCrank` account
+     * @param address the account address
+     * @returns the deserialized account
+     */
+    async getTokenCrankAccount(address: PublicKey): Promise<TokenCrankAccount> {
+      return this.program.account.tokenCrank.fetch(address)
     }
     
     /**
