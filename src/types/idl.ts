@@ -1211,7 +1211,7 @@ export type GfxStakeRewardsProgramTypes = {
       ]
     },
     {
-      "name": "crankTokensGamma",
+      "name": "crankTokensGammaStep",
       "docs": [
         "For a specific crank, swap the balance of one of its crank-signer's token-accounts to the crank output-mint"
       ],
@@ -1230,16 +1230,24 @@ export type GfxStakeRewardsProgramTypes = {
           "isSigner": false
         },
         {
-          "name": "crankInputAta",
-          "isMut": true,
+          "name": "inputTokenMint",
+          "isMut": false,
           "isSigner": false,
           "docs": [
-            "This must be a token account owned by the crank_signer PDA."
+            "The input token mint"
           ]
         },
         {
-          "name": "destinationOwner",
+          "name": "outputTokenMint",
           "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The output token mint"
+          ]
+        },
+        {
+          "name": "inputTokenAccount",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1248,65 +1256,37 @@ export type GfxStakeRewardsProgramTypes = {
           "isSigner": false
         },
         {
-          "name": "gammaProgram",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The swap CPI calls this program"
-          ]
-        },
-        {
-          "name": "ammAuthority",
+          "name": "gammaAuthority",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "ammConfig",
+          "name": "gammaConfig",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "hop1AmmPoolState",
+          "name": "gammaPoolState",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "hop1AmmObservationState",
+          "name": "gammaPoolObservationState",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "hop1AmmInputVault",
+          "name": "gammaPoolInputVault",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "hop1AmmOutputVault",
+          "name": "gammaPoolOutputVault",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "inputTokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "intermediateTokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "outputTokenMint",
-          "isMut": false,
           "isSigner": false
         },
         {
           "name": "inputTokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "intermediateTokenProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -1316,51 +1296,34 @@ export type GfxStakeRewardsProgramTypes = {
           "isSigner": false
         },
         {
-          "name": "hop1CrankOutputVault",
+          "name": "destinationOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "destinationOutputTokenAccount",
           "isMut": true,
           "isSigner": false,
-          "docs": [
-            "the first hop.",
-            "This is a token account owned by the `crank_signer` PDA and is",
-            "provided as input to the second hop."
-          ]
+          "isOptional": true
         },
         {
-          "name": "hop2AmmPoolState",
-          "isMut": true,
+          "name": "gammaProgram",
+          "isMut": false,
           "isSigner": false
         },
         {
-          "name": "hop2AmmObservationState",
-          "isMut": true,
+          "name": "systemProgram",
+          "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "hop2AmmInputVault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "hop2AmmOutputVault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "lastHopCrankOutputVault",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The vault for holding the output of the last hop(either first or second depending on the case)"
-          ]
         }
       ],
       "args": [
         {
-          "name": "minOutHop1",
+          "name": "amountIn",
           "type": "u64"
         },
         {
-          "name": "minOutHop2",
+          "name": "minAmountOut",
           "type": "u64"
         }
       ]
@@ -1453,7 +1416,7 @@ export type GfxStakeRewardsProgramTypes = {
         },
         {
           "name": "reserveAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1853,8 +1816,18 @@ export type GfxStakeRewardsProgramTypes = {
     },
     {
       "code": 6011,
-      "name": "InvalidCrank",
-      "msg": "Crank instruction does not result in the expected output mint"
+      "name": "SwapFromOutputMintNotAllowed",
+      "msg": "Can't swap from crank output mint"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidDestinationMint",
+      "msg": "Specified output mint is invalid for swap step"
+    },
+    {
+      "code": 6013,
+      "name": "MissingDestinationTokenAccount",
+      "msg": "Destination token account is not specified in instruction"
     }
   ]
 };
@@ -3072,7 +3045,7 @@ export const IDL: GfxStakeRewardsProgramTypes = {
       ]
     },
     {
-      "name": "crankTokensGamma",
+      "name": "crankTokensGammaStep",
       "docs": [
         "For a specific crank, swap the balance of one of its crank-signer's token-accounts to the crank output-mint"
       ],
@@ -3091,16 +3064,24 @@ export const IDL: GfxStakeRewardsProgramTypes = {
           "isSigner": false
         },
         {
-          "name": "crankInputAta",
-          "isMut": true,
+          "name": "inputTokenMint",
+          "isMut": false,
           "isSigner": false,
           "docs": [
-            "This must be a token account owned by the crank_signer PDA."
+            "The input token mint"
           ]
         },
         {
-          "name": "destinationOwner",
+          "name": "outputTokenMint",
           "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The output token mint"
+          ]
+        },
+        {
+          "name": "inputTokenAccount",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -3109,65 +3090,37 @@ export const IDL: GfxStakeRewardsProgramTypes = {
           "isSigner": false
         },
         {
-          "name": "gammaProgram",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The swap CPI calls this program"
-          ]
-        },
-        {
-          "name": "ammAuthority",
+          "name": "gammaAuthority",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "ammConfig",
+          "name": "gammaConfig",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "hop1AmmPoolState",
+          "name": "gammaPoolState",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "hop1AmmObservationState",
+          "name": "gammaPoolObservationState",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "hop1AmmInputVault",
+          "name": "gammaPoolInputVault",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "hop1AmmOutputVault",
+          "name": "gammaPoolOutputVault",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "inputTokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "intermediateTokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "outputTokenMint",
-          "isMut": false,
           "isSigner": false
         },
         {
           "name": "inputTokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "intermediateTokenProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -3177,51 +3130,34 @@ export const IDL: GfxStakeRewardsProgramTypes = {
           "isSigner": false
         },
         {
-          "name": "hop1CrankOutputVault",
+          "name": "destinationOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "destinationOutputTokenAccount",
           "isMut": true,
           "isSigner": false,
-          "docs": [
-            "the first hop.",
-            "This is a token account owned by the `crank_signer` PDA and is",
-            "provided as input to the second hop."
-          ]
+          "isOptional": true
         },
         {
-          "name": "hop2AmmPoolState",
-          "isMut": true,
+          "name": "gammaProgram",
+          "isMut": false,
           "isSigner": false
         },
         {
-          "name": "hop2AmmObservationState",
-          "isMut": true,
+          "name": "systemProgram",
+          "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "hop2AmmInputVault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "hop2AmmOutputVault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "lastHopCrankOutputVault",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The vault for holding the output of the last hop(either first or second depending on the case)"
-          ]
         }
       ],
       "args": [
         {
-          "name": "minOutHop1",
+          "name": "amountIn",
           "type": "u64"
         },
         {
-          "name": "minOutHop2",
+          "name": "minAmountOut",
           "type": "u64"
         }
       ]
@@ -3314,7 +3250,7 @@ export const IDL: GfxStakeRewardsProgramTypes = {
         },
         {
           "name": "reserveAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -3714,8 +3650,18 @@ export const IDL: GfxStakeRewardsProgramTypes = {
     },
     {
       "code": 6011,
-      "name": "InvalidCrank",
-      "msg": "Crank instruction does not result in the expected output mint"
+      "name": "SwapFromOutputMintNotAllowed",
+      "msg": "Can't swap from crank output mint"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidDestinationMint",
+      "msg": "Specified output mint is invalid for swap step"
+    },
+    {
+      "code": 6013,
+      "name": "MissingDestinationTokenAccount",
+      "msg": "Destination token account is not specified in instruction"
     }
   ]
 };

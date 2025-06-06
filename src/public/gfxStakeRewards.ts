@@ -8,7 +8,6 @@ import {
 import {
     ConfirmOptions,
     Connection,
-    Keypair,
     PublicKey,
     SystemProgram,
     TransactionInstruction
@@ -37,9 +36,11 @@ import {
     UnstakeTicket,
     USDCRewardVault,
     UserMetadata,
-    GfxStakeRewardsProgramTypes, IDL
+    GfxStakeRewardsProgramTypes,
+    IDL
 } from '../types'
 import {SSL, Swap} from 'goosefx-ssl-sdk'
+import BN from 'bn.js'
 
 export interface SwapRouteParams {
   ammProgram: PublicKey,
@@ -53,6 +54,7 @@ export interface SwapRouteParams {
   observationState: PublicKey,
   inputMint: PublicKey,
   outputMint: PublicKey,
+  amountIn: anchor.BN,
   minOut?: anchor.BN,
   inputTokenAccount?: PublicKey
 };
@@ -485,65 +487,84 @@ export class GfxStakeRewards {
     /**
      * Crank tokens for a specific crank account
      * @param crank The account for which to crank tokens
-     * @param swap1 
-     * @param swap2 
+     * @param swap The swap route params
      * @returns an array on instructions
      */
     async crankTokensViaGammaSwap(
       crank: PublicKey,
-      swap1: SwapRouteParams, 
-      swap2: SwapRouteParams | null
+      swap: SwapRouteParams,
+      output?: {
+        owner: PublicKey,
+        mint: PublicKey,
+      } 
     ): Promise<TransactionInstruction[]> {
-      const isSingleHop = swap2 === null
       const crankSigner = this.getCrankSignerPDA(crank).publicKey
-      const crankInputAta = swap1.inputTokenAccount ?? await getAssociatedTokenAddress(swap1.inputMint, crankSigner, true)
-      const hop1CrankOutputVault = await getAssociatedTokenAddress(swap1.outputMint, crankSigner, true)
+      const crankOutput = output ?? await this.getTokenCrankAccount(crank).then((res) => {
+        return {
+          owner: res.destinationOwner,
+          mint: res.outputMint
+        }
+      })
+      if (!crankOutput) {
+        throw new Error(`Failed to fetch crank information`)
+      }
+      const isFinalStep = swap.outputMint.toBase58() === crankOutput.mint.toBase58()
 
-      /// Only create hop1OutputAta if it's an intermediate step. Otherwise, it is expected to already exist
-      const createhop1OutputAta = !isSingleHop ? createAssociatedTokenAccountIdempotentInstruction(
-        this.wallet.publicKey,
-        hop1CrankOutputVault,
-        crankSigner,
-        swap1.outputMint
-      ) : null
+      const inputTokenAccount = swap.inputTokenAccount ?? getAssociatedTokenAddressSync(swap.inputMint, crankSigner, true)
+      const outputTokenAccount = getAssociatedTokenAddressSync(swap.outputMint, crankSigner, true)
 
-      const lastHopCrankOutputVault = swap2 ? await getAssociatedTokenAddress(
-        swap2.outputMint,
-        crankSigner,
-        true
-      ) : hop1CrankOutputVault
+      const instructions: TransactionInstruction[] = []
+      if (!isFinalStep) {
+        // crank-signer token-account for its output mint is expected to be initialized, so only create the token-account if
+        // it is an intermediate(and not final) step
+        instructions.push(
+          createAssociatedTokenAccountIdempotentInstruction(
+            this.wallet.publicKey,
+            outputTokenAccount,
+            crankSigner,
+            swap.outputMint,
+          )
+        )
+      }
+
+      const destinationOutputTokenAccount = isFinalStep ? getAssociatedTokenAddressSync(crankOutput.mint, crankOutput.owner, true) : null
+      if (destinationOutputTokenAccount) {
+        instructions.push(
+          createAssociatedTokenAccountIdempotentInstruction(
+            this.wallet.publicKey,
+            destinationOutputTokenAccount,
+            crankOutput.owner,
+            crankOutput.mint,
+          )
+        )
+      }
 
       const crankIx = await this.program.methods
-        .crankTokensGamma(swap1.minOut ?? CRANK_AMOUNT, swap2?.minOut ?? CRANK_AMOUNT)
+        .crankTokensGammaStep(swap.amountIn, swap.minOut ?? new BN(0))
         .accounts({
-          crank: ADDRESSES[this.network].STAKE_POOL,
+          crank,
           crankSigner,
-          crankInputAta,
-          gammaProgram: swap1.ammProgram,
-          ammAuthority: swap1.authority,
-          ammConfig: swap1.config,
-          hop1AmmPoolState: swap1.state,
-          hop1AmmInputVault: swap1.inputVault,
-          hop1AmmOutputVault: swap1.outputVault,
-          hop1AmmObservationState: swap1.observationState,
-
-          inputTokenMint: swap1.inputMint,
-          intermediateTokenMint: swap1.outputMint,
-          outputTokenMint: swap2?.outputMint ?? this.program.programId,
-          inputTokenProgram: swap1.inputTokenProgram,
-          intermediateTokenProgram: swap1.outputTokenProgram,
-          outputTokenProgram: TOKEN_PROGRAM_ID,
-          hop1CrankOutputVault,
-
-          hop2AmmPoolState: swap2?.state ?? this.program.programId,
-          hop2AmmInputVault: swap2?.inputVault ?? this.program.programId,
-          hop2AmmOutputVault: swap2?.outputVault ?? this.program.programId,
-          hop2AmmObservationState: swap2?.observationState ?? this.program.programId,
-          lastHopCrankOutputVault,
+          inputTokenMint: swap.inputMint,
+          outputTokenMint: swap.outputMint,
+          inputTokenAccount,
+          outputTokenAccount,
+          gammaAuthority: swap.authority,
+          gammaConfig: swap.config,
+          gammaPoolState: swap.state,
+          gammaPoolObservationState: swap.observationState,
+          gammaPoolInputVault: swap.inputVault,
+          gammaPoolOutputVault: swap.outputVault,
+          inputTokenProgram: swap.inputTokenProgram,
+          outputTokenProgram: swap.outputTokenProgram,
+          destinationOwner: crankOutput.owner,
+          destinationOutputTokenAccount,
+          gammaProgram: swap.ammProgram,
         })
         .instruction()
 
-      return createhop1OutputAta ? [createhop1OutputAta, crankIx] : [crankIx]
+      instructions.push(crankIx)
+
+      return instructions
     }
 
     /**
