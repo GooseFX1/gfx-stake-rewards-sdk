@@ -54,7 +54,7 @@ export interface SwapRouteParams {
   observationState: PublicKey,
   inputMint: PublicKey,
   outputMint: PublicKey,
-  amountIn: anchor.BN,
+  amountIn?: anchor.BN,
   minOut?: anchor.BN,
   inputTokenAccount?: PublicKey
 };
@@ -540,7 +540,7 @@ export class GfxStakeRewards {
       }
 
       const crankIx = await this.program.methods
-        .crankTokensGammaStep(swap.amountIn, swap.minOut ?? new BN(0))
+        .crankTokensGammaStep(swap.minOut ?? new BN(0))
         .accounts({
           crank,
           crankSigner,

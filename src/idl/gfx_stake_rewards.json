@@ -1319,10 +1319,6 @@
       ],
       "args": [
         {
-          "name": "amountIn",
-          "type": "u64"
-        },
-        {
           "name": "minAmountOut",
           "type": "u64"
         }

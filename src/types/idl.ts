@@ -1319,10 +1319,6 @@ export type GfxStakeRewardsProgramTypes = {
       ],
       "args": [
         {
-          "name": "amountIn",
-          "type": "u64"
-        },
-        {
           "name": "minAmountOut",
           "type": "u64"
         }
@@ -3152,10 +3148,6 @@ export const IDL: GfxStakeRewardsProgramTypes = {
         }
       ],
       "args": [
-        {
-          "name": "amountIn",
-          "type": "u64"
-        },
         {
           "name": "minAmountOut",
           "type": "u64"
