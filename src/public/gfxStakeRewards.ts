@@ -579,10 +579,14 @@ export class GfxStakeRewards {
       destinationReserveAccount: PublicKey,
       payer?: PublicKey
     ): Promise<TransactionInstruction> {
+      const lstRewards = this.getLSTRewardsPDA().publicKey
+
       return this.program.methods
         .initializeLstRewards(authority, destinationReserveAccount)
         .accounts({
           payer: payer ?? this.wallet.publicKey,
+          lstRewards,
+          systemProgram: SystemProgram.programId
         })
         .instruction()
     }
@@ -599,10 +603,14 @@ export class GfxStakeRewards {
       newDestinationReserveAccount: PublicKey | null,
       authority?: PublicKey
     ): Promise<TransactionInstruction> {
+      const lstRewards = this.getLSTRewardsPDA().publicKey
+
       return this.program.methods
         .updateLstRewardsParams(newAuthority, newDestinationReserveAccount)
         .accounts({
           authority: authority ?? this.wallet.publicKey,
+          lstRewards,
+          systemProgram: SystemProgram.programId
         })
         .instruction()
     }
@@ -622,7 +630,10 @@ export class GfxStakeRewards {
         .transferLstRewards()
         .accounts({
           rewardsTokenAccount, 
-          reserveAccount,         
+          reserveAccount,        
+          lstRewards,
+          systemProgram: SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID, // output mint is SOL
         })
         .instruction()
     }
